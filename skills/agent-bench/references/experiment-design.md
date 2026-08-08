@@ -40,12 +40,12 @@ Before any run:
 
 ## Choosing N
 
-N is chosen from the case's expected cost and the available budget **before** seeing any results. Never set or revise N after observing outcomes.
+N is chosen from the case's expected cost and the available budget **before** seeing any results. Never set or revise N after observing outcomes. Use the expected cost range from the case's own `## Identity` table in `cases/CATALOG.md` as the budgeting input.
 
-| Case length | N rule |
+| Case family | N rule |
 |---|---|
-| Short (expected cost ≤ $1) | N ≥ 5 |
-| Long (expected cost > $1) | N ≥ 3 if affordable; N = 1 explicitly labelled exploratory-only |
+| Short greenfield (`S-*`) and bug hunt (`B-*`) | N ≥ 5 — these cases are cheap enough to run at this scale in a single session |
+| Long greenfield (`L-*`), multi-file refactor (`R-*`), and multi-session (`M-*`) | N ≥ 3 if the budget allows; N = 1 is exploratory-only and must be labelled as such |
 
 An exploratory-only run (N = 1) must be marked as such in the report and may not be used to declare a winner.
 

@@ -12,7 +12,7 @@ cases/<ID>/
   spec/              # Task specification — copied into the solver's working copy
   scaffold/          # Starter code — copied into the solver's working copy
   acceptance.md      # Per-item acceptance criteria with verification commands
-  rubric.md          # Judge rubric: 1/3/5 anchors per dimension; may reweight
+  rubric.md          # Judge rubric: 1/3/5 anchors per dimension; may reweight but must not add or remove dimensions — the set is fixed in evaluator-4-judge.md
   probes/            # Hidden test files; never copied into the solver's working copy
     test_probe.py    # One or more probe files
     SHA256SUMS       # Integrity manifest; frozen before any solver runs
@@ -20,6 +20,8 @@ cases/<ID>/
 ```
 
 `spec/` and `scaffold/` are the only directories copied into the solver's working copy. `probes/`, `acceptance.md`, and `rubric.md` are evaluation material; they are never placed within the solver's reach. See `references/run-protocol.md` for the exact copy procedure and the pre-flight verification command.
+
+`rubric.md` may adjust the 1/3/5 score anchors and reweight the dimensions defined in `references/evaluator-4-judge.md`, but it must not add or remove dimensions. The dimension set is fixed by the evaluator. A dimension with missing anchors is silently skipped by Stage 4 — so adding an undocumented dimension does not raise an error, it simply produces no score for that dimension.
 
 ## case.md required sections
 
@@ -127,7 +129,7 @@ Before the case is used in any benchmark run, confirm that the probes correctly 
 1. Build a throwaway reference implementation **outside the repository** in a temporary directory that is not tracked and will not be committed. The case spec in `spec/` is your only guide.
 2. Run the probe suite against it:
    ```sh
-   cd probes && uv run pytest test_probe.py -q
+   cd probes && uv run pytest -q
    ```
    Confirm all probes pass.
 3. Break one requirement deliberately in the throwaway implementation: comment out a validation, reverse a condition, drop a required field from the response.
