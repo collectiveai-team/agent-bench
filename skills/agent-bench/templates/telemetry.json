@@ -1,0 +1,36 @@
+{
+  "run_id": "",
+  "source_logs": [],
+  "totals": {
+    "input_tokens": 0,
+    "output_tokens": 0,
+    "reasoning_tokens": 0,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0,
+    "cost_usd": 0.0,
+    "wall_clock_seconds": 0,
+    "wall_clock_seconds_net_of_rate_limits": 0,
+    "agent_invocations": 0,
+    "turns": 0,
+    "attempts": 0,
+    "rate_limit_events": 0
+  },
+  "by_role": [
+    {
+      "role": "",
+      "provider": "",
+      "model": "",
+      "invocations": 0,
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0,
+      "cost_usd": 0.0,
+      "duration_seconds": 0
+    }
+  ],
+  "convergence": "converged | aborted_on_budget | required_human_intervention",
+  "process_hygiene": { "commits": 0, "diff_lines_added": 0, "diff_lines_removed": 0, "files_touched": 0 },
+  "cost_basis": "reported_by_provider | computed_from_token_counts",
+  "cost_basis_note": ""
+}

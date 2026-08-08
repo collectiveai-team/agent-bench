@@ -1,0 +1,19 @@
+{
+  "run_id": "",
+  "diff_range": "",
+  "hunt_list_used": [],
+  "findings": [
+    {
+      "id": "",
+      "title": "",
+      "location": "",
+      "claim": "",
+      "reproduction": { "kind": "test | curl | websocket_transcript | command", "content": "", "observed_output": "" },
+      "reproduced": false,
+      "seeded_defect_id": null,
+      "severity": "blocking | note"
+    }
+  ],
+  "confirmed_count": 0,
+  "unreproduced_count": 0
+}

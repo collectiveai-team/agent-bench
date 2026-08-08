@@ -1,0 +1,31 @@
+{
+  "run_id": "",
+  "date": "",
+  "round": "",
+  "case": "",
+  "case_version": "",
+  "family": "",
+  "arm": "",
+  "repetition": 0,
+  "hypothesis": "",
+  "independent_variable": "",
+  "held_constant": [],
+  "solver": {
+    "launch_command": "",
+    "prompt_verbatim": "",
+    "binaries": [{ "name": "", "version": "", "sha256": "" }],
+    "config_files": [{ "path": "", "sha256": "", "differs_between_arms": false }],
+    "mcp_servers": [],
+    "model_assignments": {}
+  },
+  "base_commit_sha": "",
+  "work_branch": "",
+  "environment": {
+    "machine": "",
+    "os_version": "",
+    "sleep_inhibited": false,
+    "launched_at": "",
+    "provider_incidents": []
+  },
+  "budget": { "max_usd": 0, "max_wall_clock_seconds": 0, "stop_rule": "" }
+}

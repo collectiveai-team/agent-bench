@@ -1,0 +1,23 @@
+{
+  "run_id": "",
+  "judge_model": "",
+  "judge_family": "",
+  "families_under_test": [],
+  "blinded_as": "",
+  "samples": 3,
+  "absolute": [
+    {
+      "sample": 1,
+      "dimensions": [
+        { "dimension": "", "score": 0, "evidence": ["file:line — reason"], "worst_finding": "" }
+      ]
+    }
+  ],
+  "pairwise": [
+    { "sample": 1, "position": "A,B", "dimension": "", "winner": "A | B | tie", "justification": "" }
+  ],
+  "median_scores": {},
+  "L": 0.0,
+  "position_flips": [],
+  "discarded_unevidenced_scores": 0
+}

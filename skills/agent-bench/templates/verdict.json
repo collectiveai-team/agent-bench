@@ -1,0 +1,23 @@
+{
+  "run_id": "",
+  "evaluated_commit_sha": "",
+  "fresh_clone_path": "",
+  "gates": {
+    "ruff": { "command": "uv run ruff check .", "exit_code": null, "passed": false },
+    "pytest": { "command": "uv run pytest -q", "exit_code": null, "passed": false, "tests_collected": 0 }
+  },
+  "gates_passed": false,
+  "probes": {
+    "sha256_verified": false,
+    "command": "",
+    "passed": 0,
+    "total": 0,
+    "failures": []
+  },
+  "acceptance": {
+    "total_items": 0,
+    "passed_items": 0,
+    "items": [{ "id": "", "criterion": "", "verification_command": "", "observed": "", "passed": false }]
+  },
+  "family_outcome": {}
+}
