@@ -592,7 +592,7 @@ jq -s 'map(select(.type=="result")) | .[0] |
 | `type == "item.completed"`, `.item.type == "file_change"` | `.item.changes[].path` | files written |
 | `type == "item.completed"`, `.item.type == "agent_message"` | count | turns |
 
-State the two corrections that must be applied, because they are not obvious from the field names:
+State the three corrections that must be applied, because they are not obvious from the field names:
 - `input_tokens` is **inclusive of** `cached_input_tokens`. Report `input = input_tokens - cached_input_tokens` and `cache_read = cached_input_tokens`, or the arm double-counts cached input.
 - `reasoning_output_tokens` must be **added into** `output_tokens`, and also reported separately in `reasoning_tokens`.
 - Codex emits no cost field. Set `cost_basis: "computed_from_token_counts"` and record the rate used in `cost_basis_note`.
