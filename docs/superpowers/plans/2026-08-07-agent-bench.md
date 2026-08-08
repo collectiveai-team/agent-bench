@@ -998,6 +998,12 @@ The seven dimensions from `evaluator-4-judge.md` with Taskflow-specific 1/3/5 an
 Sections per `adding-a-case.md`. `## What this case does NOT measure` must state, at minimum: context retention across sessions, defect detection in existing code, and navigation of an unfamiliar codebase — this case starts from an empty tree.
 `## Provenance` records the source path and that the material is copied, not moved.
 
+Add one further section, `## Validity threat: a public reference implementation exists`, stating verbatim what it costs and why it was accepted:
+
+> `cases/_base-taskflow/` in this same public repository is a complete, working implementation of this case's specification, kept because families B and R need a realistic codebase. It is a copyable answer key for `L-taskflow`. This does not distort a comparison — every arm has identical access to it — but it does expose the case to training-data contamination over time. Any round on this case whose result will be published or used to justify spend must run against a private probe overlay, per `references/reporting.md`.
+
+This section is required. Task 12's rule that a reference implementation is never committed still holds for every other case; this is the single documented exception.
+
 - [ ] **Step 7: Validate the probes against a known-good implementation**
 
 The frozen base built in Task 14 is a Taskflow implementation that already scored 14/14 on this probe. Use it as the validation target:
@@ -1359,6 +1365,10 @@ Expected: 14 passed.
 - [ ] **Step 5: Write `BASE.md`**
 
 Sections: `## Identity` (`_base-taskflow@1`), `## Provenance` (source repository path, branch `bench-r4`, the exact commit SHA — capture it with `git -C ... rev-parse bench-r4`), `## Known deviations` (the module-level `_event_bus`, stated as a documented deviation so that a hunter reporting it is neither credited as finding a seeded defect nor penalised as a false positive), `## Verification` (the two command blocks above with their expected outputs), `## What was stripped` (the list from Step 2 and why), `## Staleness` (regenerating this base bumps it to `@2` and invalidates comparability of `B-sabotage` and `R-envelope` runs across the boundary).
+
+One more section, `## Answer-key exposure`, stating verbatim:
+
+> This tree is a complete working implementation of `L-taskflow`'s specification, and this repository is public. Keeping it here is a deliberate trade: families B and R need a realistic codebase, and building one from nothing would cost more than the exposure does. The consequence is recorded in `cases/L-taskflow/case.md` under "Validity threat: a public reference implementation exists". Do not resolve this by deleting the base; resolve it, if it ever matters, by moving B and R onto a codebase that corresponds to no case in the catalog.
 
 - [ ] **Step 6: Amend the design spec**
 
