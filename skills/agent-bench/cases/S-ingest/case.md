@@ -8,7 +8,7 @@
 | Version | 1 |
 | Expected duration | 15–45 min |
 | Expected cost | $1–4 |
-| Acceptance item count | 22 |
+| Acceptance item count | 24 |
 
 ## What it measures
 
@@ -78,3 +78,12 @@ Version history:
 - v1 (2026-08-08): initial authoring. Probe validation: 8/8 pass on correct
   reference; 1/8 fail (`test_duplicate_id_quarantines_the_later_row`) when
   duplicate-id detection is commented out.
+- v1.1 (2026-08-08): fix round. Added probe 9
+  (`test_duplicate_id_when_first_occurrence_quarantined`) to catch the gap
+  where a solver only tracks valid-row ids. Added stdout=="" assertion for
+  missing-file path. Added header-only+--strict sub-case to test_exit_codes.
+  Grounded AC-01 in spec (added --help to spec/features.md). Added AC-23/AC-24
+  (README column-rules table and exit-code table). Fixed contradictory AC-05/AC-06
+  note. Regenerated SHA256SUMS. Frozen acceptance count: 24. Updated probe
+  validation: 9/9 pass on correct reference; 2/9 fail on deliberate break
+  (both duplicate-id tests).

@@ -7,9 +7,9 @@
 **Reference directory:** `/tmp/agb-ingest-ref` (throwaway; not committed)
 
 **Venv source:** created fresh with `uv venv .venv --python 3.12`, then
-`uv pip install polars pytest`. Installed: polars 1.43.2, pytest 9.1.1. The
-reference implementation (`/tmp/agb-ingest-ref/app/cli.py`) was written from
-scratch against `spec/features.md` and was never committed.
+`uv pip install --python .venv/bin/python polars pytest`. Installed: polars 1.43.2,
+pytest 9.1.1. The reference implementation (`/tmp/agb-ingest-ref/app/cli.py`)
+was written from scratch against `spec/features.md` and was never committed.
 
 **Command used:**
 
@@ -26,21 +26,22 @@ platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /private/tmp/ag
 cachedir: .pytest_cache
 rootdir: /private/tmp/agb-ingest-ref
 configfile: pyproject.toml
-collecting ... collected 8 items
+collecting ... collected 9 items
 
-tests/test_probe.py::test_all_valid_rows_pass_through_in_order PASSED    [ 12%]
-tests/test_probe.py::test_bad_amount_quarantined_with_reason PASSED      [ 25%]
-tests/test_probe.py::test_bad_currency_quarantined_with_reason PASSED    [ 37%]
-tests/test_probe.py::test_naive_timestamp_quarantined PASSED             [ 50%]
-tests/test_probe.py::test_duplicate_id_quarantines_the_later_row PASSED  [ 62%]
-tests/test_probe.py::test_first_failing_rule_wins PASSED                 [ 75%]
-tests/test_probe.py::test_exit_codes PASSED                              [ 87%]
-tests/test_probe.py::test_missing_and_empty_input PASSED                 [100%]
+tests/test_probe.py::test_all_valid_rows_pass_through_in_order PASSED    [ 11%]
+tests/test_probe.py::test_bad_amount_quarantined_with_reason PASSED      [ 22%]
+tests/test_probe.py::test_bad_currency_quarantined_with_reason PASSED    [ 33%]
+tests/test_probe.py::test_naive_timestamp_quarantined PASSED             [ 44%]
+tests/test_probe.py::test_duplicate_id_quarantines_the_later_row PASSED  [ 55%]
+tests/test_probe.py::test_first_failing_rule_wins PASSED                 [ 66%]
+tests/test_probe.py::test_exit_codes PASSED                              [ 77%]
+tests/test_probe.py::test_missing_and_empty_input PASSED                 [ 88%]
+tests/test_probe.py::test_duplicate_id_when_first_occurrence_quarantined PASSED [100%]
 
-============================== 8 passed in 1.58s ==============================
+============================== 9 passed in 4.68s ==============================
 ```
 
-**Result:** 8/8 passed. All probes pass against this known-good implementation.
+**Result:** 9/9 passed. All probes pass against this known-good implementation.
 
 Note: the probe invokes the CLI via `uv run ingest` (a subprocess). The reference
 `pyproject.toml` includes `[tool.hatch.build.targets.wheel] packages = ["app"]`
@@ -58,14 +59,15 @@ hatchling pitfall.
 was commented out:
 
 ```python
-# BROKEN: keeps later row instead of first (for deliberate-break validation)
+# 2. id unique — BROKEN: keeps later row instead of first (deliberate-break validation)
 # if id_val in seen_ids:
 #     return "id"
 ```
 
 With this break, duplicate ids are never quarantined — both the first and all
 later occurrences are treated as valid (subject only to the remaining rules). This
-simulates a naive implementation that omits duplicate-id detection.
+simulates a naive implementation that omits duplicate-id detection entirely,
+including the case where the first occurrence was quarantined for another reason.
 
 **Command used:**
 
@@ -81,44 +83,53 @@ platform darwin -- Python 3.12.13, pytest-9.1.1, pluggy-1.6.0 -- /private/tmp/ag
 cachedir: .pytest_cache
 rootdir: /private/tmp/agb-ingest-ref
 configfile: pyproject.toml
-collecting ... collected 8 items
+collecting ... collected 9 items
 
-tests/test_probe.py::test_all_valid_rows_pass_through_in_order PASSED    [ 12%]
-tests/test_probe.py::test_bad_amount_quarantined_with_reason PASSED      [ 25%]
-tests/test_probe.py::test_bad_currency_quarantined_with_reason PASSED    [ 37%]
-tests/test_probe.py::test_naive_timestamp_quarantined PASSED             [ 50%]
-tests/test_probe.py::test_duplicate_id_quarantines_the_later_row FAILED  [ 62%]
-tests/test_probe.py::test_first_failing_rule_wins PASSED                 [ 75%]
-tests/test_probe.py::test_exit_codes PASSED                              [ 87%]
-tests/test_probe.py::test_missing_and_empty_input PASSED                 [100%]
+tests/test_probe.py::test_all_valid_rows_pass_through_in_order PASSED    [ 11%]
+tests/test_probe.py::test_bad_amount_quarantined_with_reason PASSED      [ 22%]
+tests/test_probe.py::test_bad_currency_quarantined_with_reason PASSED    [ 33%]
+tests/test_probe.py::test_naive_timestamp_quarantined PASSED             [ 44%]
+tests/test_probe.py::test_duplicate_id_quarantines_the_later_row FAILED  [ 55%]
+tests/test_probe.py::test_first_failing_rule_wins PASSED                 [ 66%]
+tests/test_probe.py::test_exit_codes PASSED                              [ 77%]
+tests/test_probe.py::test_missing_and_empty_input PASSED                 [ 88%]
+tests/test_probe.py::test_duplicate_id_when_first_occurrence_quarantined FAILED [100%]
 
 =================================== FAILURES ===================================
 _________________ test_duplicate_id_quarantines_the_later_row __________________
 
-tmp_path = PosixPath('/private/var/folders/fr/1hzjgk3n61z65276whgbl5v40000gn/T/pytest-of-lionelchamorro/pytest-1925/test_duplicate_id_quarantines_0')
-
     def test_duplicate_id_quarantines_the_later_row(tmp_path):
         ...
-        result = _run(inp, out, quar)
-
         assert result.returncode == 0
 >       assert result.stdout.strip() == "read=3 valid=2 quarantined=1"
 E       AssertionError: assert 'read=3 valid=3 quarantined=0' == 'read=3 valid=2 quarantined=1'
 E
 E         - read=3 valid=2 quarantined=1
-E         ?              ^             ^
 E         + read=3 valid=3 quarantined=0
-E         ?              ^             ^
 
 tests/test_probe.py:216: AssertionError
+_____________ test_duplicate_id_when_first_occurrence_quarantined ______________
+
+    def test_duplicate_id_when_first_occurrence_quarantined(tmp_path):
+        ...
+>       assert result.stdout.strip() == "read=3 valid=1 quarantined=2"
+E       AssertionError: assert 'read=3 valid=2 quarantined=1' == 'read=3 valid=1 quarantined=2'
+E
+E         - read=3 valid=1 quarantined=2
+E         + read=3 valid=2 quarantined=1
+
+tests/test_probe.py:399: AssertionError
 =========================== short test summary info ============================
-FAILED tests/test_probe.py::test_duplicate_id_quarantines_the_later_row - Ass...
-========================= 1 failed, 7 passed in 0.90s ==========================
+FAILED tests/test_probe.py::test_duplicate_id_quarantines_the_later_row
+FAILED tests/test_probe.py::test_duplicate_id_when_first_occurrence_quarantined
+======================= 2 failed, 7 passed in 1.13s ==========================
 ```
 
-**Result:** Exactly 1 failure (`test_duplicate_id_quarantines_the_later_row`).
-All 7 other probe tests continued to pass. The probe correctly discriminates
-the duplicate-id quarantine requirement.
+**Result:** Exactly 2 failures (`test_duplicate_id_quarantines_the_later_row` and
+`test_duplicate_id_when_first_occurrence_quarantined`). All 7 other probe tests
+continued to pass. Both duplicate-id tests correctly catch the break. The reviewer
+anticipated this: "with Important 1 added, that break may now fail two tests rather
+than one — if so, that is correct and expected."
 
 ## Cleanup
 

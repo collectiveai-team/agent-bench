@@ -1,6 +1,6 @@
 # Acceptance criteria — S-ingest
 
-Frozen item count: **22**
+Frozen item count: **24**
 
 Each row is one observable criterion. The evaluator runs `verification_command`
 verbatim in the root of a fresh clone of the solver's branch and determines
@@ -22,10 +22,10 @@ probe scores.
 
 **Granularity note for AC-05/AC-06:** Lowercase-currency and four-letter-currency
 are tested with separate inline commands because they are independently falsifiable:
-a solver implementing only a length check would pass AC-06 (four-letter "USDD"
-caught) but fail AC-06 if they only check for uppercase — actually each tests a
-different constraint of the `[A-Z]{3}` rule, so a one-sided implementation can
-fail one without failing the other.
+a solver implementing only a length check (but not a case check) passes AC-06
+("USDD" is four letters — caught) but fails AC-05 ("usd" is three letters — not
+caught). A solver implementing only a case check (but not a length check) passes
+AC-05 but fails AC-06.
 
 **Granularity note for AC-09/AC-10:** These replace a single probe-as-acceptance
 row because empty-id detection (AC-09) and rule-ordering (AC-10) are independently
@@ -75,3 +75,7 @@ but applies rules in the wrong order would fail AC-10 and pass AC-09.
 | AC-20 | `README.md` exists at the repository root. | `test -f README.md && echo present` |
 | AC-21 | `README.md` contains a `uv sync` step in the quickstart. | `python3 -c "t=open('README.md').read(); print('ok' if 'uv sync' in t else 'missing')"` |
 | AC-22 | `README.md` contains a `uv run ingest` invocation example. | `python3 -c "t=open('README.md').read(); print('ok' if 'uv run ingest' in t else 'missing')"` |
+| AC-23 | `README.md` contains the column rules table (includes both `occurred_at` and `amount_minor` as named columns). | `python3 -c "t=open('README.md').read(); print('ok' if 'occurred_at' in t and 'amount_minor' in t else 'missing')"` |
+| note | A README with only a quickstart would not mention `occurred_at`; its presence confirms the column rules section exists. | — |
+| AC-24 | `README.md` contains the exit code table (includes `--strict` as a named condition). | `python3 -c "t=open('README.md').read(); print('ok' if '--strict' in t else 'missing')"` |
+| note | A README with only a quickstart would not mention `--strict`; its presence confirms the exit code table exists. | — |

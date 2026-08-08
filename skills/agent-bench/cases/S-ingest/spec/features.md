@@ -12,7 +12,8 @@ and Parquet writes; dev group: `pytest`, `ruff`. No other runtime dependencies
 are required.
 
 **Entry point:** the `ingest` CLI registered in `[project.scripts]` in
-`pyproject.toml`. Invoke as `uv run ingest` from the project root.
+`pyproject.toml`. Invoke as `uv run ingest` from the project root. The CLI
+supports `--help` to print usage information and exit 0.
 
 **Gates:** `uv run ruff check .` and `uv run pytest -q` must exit 0 after every
 feature. Tests must be fully self-contained: use temporary files per test, no

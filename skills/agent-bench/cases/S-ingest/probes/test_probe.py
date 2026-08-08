@@ -272,7 +272,9 @@ def test_first_failing_rule_wins(tmp_path):
 
 def test_exit_codes(tmp_path):
     """Exit codes: 0 when any valid; 1 when none valid; 2 when --strict and any
-    quarantined (overrides 0 and 1); 0 when --strict but no quarantined rows."""
+    quarantined (overrides 0 and 1); 0 when --strict but no quarantined rows;
+    1 for a header-only file with --strict (zero quarantined, zero valid → higher
+    of 'none-valid → 1' and 'strict-no-quarantine → 0' is 1)."""
     valid_row = {
         "id": "v1", "amount_minor": "100", "currency": "USD",
         "occurred_at": "2026-01-01T00:00:00+00:00",
@@ -308,9 +310,20 @@ def test_exit_codes(tmp_path):
         f"expected 0 with --strict but no quarantined rows, got {r.returncode}"
     )
 
+    # --- exit 1: header-only file with --strict ---
+    # zero quarantined rows and zero valid rows: "no valid rows → 1" wins over
+    # "strict with nothing quarantined → 0"; precedence: 2 > 1 > 0.
+    inp = tmp_path / "empty_strict.csv"
+    inp.write_text("id,amount_minor,currency,occurred_at\n")
+    r = _run(inp, tmp_path / "out_es.parquet", tmp_path / "q_es.csv", strict=True)
+    assert r.returncode == 1, (
+        f"expected 1 for header-only file with --strict (no-valid beats strict-no-quarantine), "
+        f"got {r.returncode}"
+    )
+
 
 def test_missing_and_empty_input(tmp_path):
-    """Missing input file: exit 2, stderr message, no output files created.
+    """Missing input file: exit 2, stderr message, no output files created, no stdout.
     Header-only file: exit 1, empty Parquet with correct schema, empty
     quarantine CSV with five-column header, stdout summary read=0 valid=0 quarantined=0."""
     # --- missing input file ---
@@ -320,6 +333,10 @@ def test_missing_and_empty_input(tmp_path):
     r = _run(missing, out, quar)
     assert r.returncode == 2, f"expected 2 for missing input file, got {r.returncode}"
     assert r.stderr.strip() != "", "expected an error message on stderr for missing input file"
+    assert r.stdout.strip() == "", (
+        f"missing input file must print nothing to stdout (error goes to stderr only), "
+        f"got: {r.stdout!r}"
+    )
     assert not out.exists(), "output Parquet must not be created when input is missing"
     assert not quar.exists(), "quarantine CSV must not be created when input is missing"
 
@@ -348,3 +365,57 @@ def test_missing_and_empty_input(tmp_path):
         f"quarantine header must be exactly the five expected columns, got: {rows[0]}"
     )
     assert len(rows) == 1, "quarantine CSV for empty input must have only the header row"
+
+
+def test_duplicate_id_when_first_occurrence_quarantined(tmp_path):
+    """The id uniqueness check applies to ALL ids seen so far, regardless of whether
+    the first occurrence was quarantined for a different reason.
+
+    Row A: id='X', bad amount_minor → quarantined with reason='amount_minor'; id 'X' is now seen.
+    Row B: id='X', all fields valid → must be quarantined with reason='id' (duplicate),
+           not written to the Parquet output.
+
+    A solver that only tracks ids of valid rows would pass Row B through to the Parquet,
+    violating the spec clause 'unique within the file'.
+    """
+    inp = tmp_path / "in.csv"
+    out = tmp_path / "out.parquet"
+    quar = tmp_path / "quar.csv"
+    _write_csv(inp, [
+        # Row A: id='X', bad amount → quarantined for amount_minor; but 'X' enters seen_ids
+        {"id": "X", "amount_minor": "notanint", "currency": "USD",
+         "occurred_at": "2026-01-01T00:00:00+00:00"},
+        # Row B: id='X', all valid → must be quarantined as duplicate (reason='id')
+        {"id": "X", "amount_minor": "100", "currency": "USD",
+         "occurred_at": "2026-01-01T00:00:00+00:00"},
+        # Row C: unique valid row → should reach the Parquet output
+        {"id": "Y", "amount_minor": "200", "currency": "EUR",
+         "occurred_at": "2026-01-02T00:00:00+00:00"},
+    ])
+
+    result = _run(inp, out, quar)
+
+    assert result.returncode == 0  # Row C is valid
+    assert result.stdout.strip() == "read=3 valid=1 quarantined=2"
+
+    df = pl.read_parquet(out)
+    assert len(df) == 1
+    assert df["id"].to_list() == ["Y"], (
+        "only Row C (id='Y') must be in the Parquet; Row B must be quarantined as duplicate"
+    )
+
+    with quar.open() as f:
+        reader = csv.DictReader(f)
+        bad_rows = list(reader)
+    assert len(bad_rows) == 2
+    reasons_by_id = {r["id"]: r["reason"] for r in bad_rows}
+    assert reasons_by_id["X"] == "amount_minor" or reasons_by_id.get("X") == "id", (
+        "Row A must be quarantined (either for amount_minor on first occurrence or id on second)"
+    )
+    # The critical assertion: the SECOND occurrence of 'X' must be quarantined as 'id'
+    # Collect all reasons for rows with id='X'
+    x_reasons = [r["reason"] for r in bad_rows if r["id"] == "X"]
+    assert "id" in x_reasons, (
+        f"the second occurrence of id='X' (with valid data) must be quarantined with reason='id', "
+        f"but got reasons for 'X': {x_reasons}"
+    )
