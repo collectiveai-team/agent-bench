@@ -111,7 +111,7 @@ Rules carried over from `orquesta-lite/benchmark/evaluation.md`:
 ## 4. Repository layout
 
 ```
-agent-bench/                              # GitHub; npx skills add <github-owner>/agent-bench
+agent-bench/                              # npx skills add collectiveai-team/agent-bench
 ├── README.md
 ├── skills/agent-bench/
 │   ├── SKILL.md
@@ -142,10 +142,10 @@ agent-bench/                              # GitHub; npx skills add <github-owner
     └── <YYYY-MM-DD>-<case>-<solver>-r<n>/
 ```
 
-Distribution is `npx skills add <github-owner>/agent-bench` (the
-`vercel-labs/skills`
-CLI), which copies `skills/agent-bench/` into `~/.agents/skills/` and symlinks it
-into each harness. This drives one layout constraint: **everything the skill
+The repository is `git@github.com:collectiveai-team/agent-bench.git`.
+Distribution is `npx skills add collectiveai-team/agent-bench` (the
+`vercel-labs/skills` CLI), which copies `skills/agent-bench/` into
+`~/.agents/skills/` and symlinks it into each harness. This drives one layout constraint: **everything the skill
 needs at runtime lives inside its own folder**, cases included. Cases are text
 and small trees, so this is cheap.
 
