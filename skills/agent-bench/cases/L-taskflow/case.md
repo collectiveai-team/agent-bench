@@ -8,7 +8,7 @@
 | Version | 1 |
 | Expected duration | 2–6 h |
 | Expected cost | $15–60 |
-| Acceptance item count | 34 |
+| Acceptance item count | 37 |
 
 ## What it measures
 
