@@ -436,7 +436,7 @@ Required structure, in this order, and nothing more — detail belongs in refere
 | 4. Evaluate | Four evaluator stages as independent subagents against a fresh clone | No solver self-report enters the verdict |
 | 5. Report | Scorecard, `INDEX.md` row, threats to validity | No winner declared inside the spread |
 
-4. `## Read before acting` — routing table mapping each phase to its reference file, listing all eleven references plus the four solver notes by exact path.
+4. `## Read before acting` — routing table mapping each phase to its reference file, listing all ten references plus the four solver notes by exact path — fourteen files in total, exactly the set the File Structure section above enumerates.
 5. `## Hard rules` — a bulleted list of exactly these seven, each one line:
    - Exactly one independent variable per comparison; everything else is asserted byte-identical and hashed in the manifest.
    - The evaluator runs the gates and the probes itself; the solver's self-report never enters the verdict.
