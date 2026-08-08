@@ -8,7 +8,7 @@
 
 **Note on commit identity:** The implementation was never committed in the source repository. Branch `bench-r4` still points at the scaffold commit; the complete implementation exists only as untracked files in the working tree. The SHA below identifies the scaffold commit, not the implementation.
 
-**Scaffold commit SHA:** Run `git -C /Users/lionelchamorro/Projects/personal/hookrelay-r4-gpt-sol log --oneline -1` to confirm; implementation is untracked on top of this commit.
+**Scaffold commit SHA:** `f3ffad5` (`chore: scaffold hookrelay benchmark round 2 base`) — branch `bench-r4` still points here; the delivered implementation was untracked on top of it and was never committed.
 
 **Command used:**
 
