@@ -55,6 +55,12 @@ skills/agent-bench/cases/<ID>/
 └── rubric.md        # case-specific anchors for the quality judge
 ```
 
+Cases in families B and R share a frozen implementation stored at
+`cases/_base-taskflow/`, versioned as `_base-taskflow@<n>`, documented by its
+own `BASE.md`. Both `B-sabotage` and `R-envelope` declare this base; regenerating
+it bumps the version and invalidates cross-boundary comparisons between runs of
+either case.
+
 Cases are versioned as `<ID>@<n>`. Editing `spec/`, `probes/`, or
 `acceptance.md` bumps the version; existing runs stay bound to the version they
 scored against.
@@ -168,8 +174,9 @@ across families and a solver adapter written once works everywhere.
 | `L-hookrelay` | Long greenfield | ported from `orquesta-lite/benchmark/round2/` | 2-6 h, $15-60 | A second spec, so conclusions do not rest on one |
 | `S-ledger` | Short greenfield | new | 15-45 min, $1-4 | Idempotency keys, boundary math on balances, error bodies. Cheap enough for N>=5 |
 | `S-ingest` | Short greenfield | new | 15-45 min, $1-4 | Schema-validating ingest CLI with bad-row quarantine. Non-API, so "short" is not always the same shape |
-| `B-sabotage` | Bug hunt | frozen good `L-taskflow` implementation + defect patches | 10-30 min, $1-3 | Detection rather than authoring; bug-hunter roles |
-| `R-envelope` | Multi-file refactor | same frozen base | 30-90 min, $2-8 | Complete sweep over a sealed site list; where subagents vs single session should separate |
+| `_base-taskflow` | shared base | `taskflow-r4-gpt-sol` bench-r4 untracked tree, frozen as `_base-taskflow@1` | n/a | Not a runnable case; declared by `B-sabotage` and `R-envelope`. Versioned separately; regenerating it invalidates cross-boundary run comparisons for both families |
+| `B-sabotage` | Bug hunt | `_base-taskflow@1` + defect patches | 10-30 min, $1-3 | Detection rather than authoring; bug-hunter roles |
+| `R-envelope` | Multi-file refactor | `_base-taskflow@1` | 30-90 min, $2-8 | Complete sweep over a sealed site list; where subagents vs single session should separate |
 | `M-relay` | Multi-session | `S-ledger` split into 3 legs with cold context between | 1-2 h, $4-12 | Continuity; the only design where a memory MCP can produce signal |
 
 Three decisions inside this:
