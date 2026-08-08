@@ -1115,16 +1115,20 @@ Same structure as Task 10, with Hookrelay-specific anchors and `## What this cas
 
 `hookrelay-r4-gpt-sol`'s work was never committed either — branch `bench-r4` points at the scaffold and the implementation is untracked. Copy the working tree, exactly as Task 10 does:
 
+**Copy the source `.venv` and do not run `uv sync`.** Task 10's first fix attempt stalled for ten minutes because `uv sync` re-downloaded the dependency tree; reusing the existing virtualenv runs the probe in about ten seconds with no network. Invoke the interpreter directly — `uv run` would re-resolve.
+
 ```bash
 SRC=/Users/lionelchamorro/Projects/personal/hookrelay-r4-gpt-sol
 rm -rf /tmp/agb-hr-check
 rsync -a --exclude '.git' --exclude '.orquestalite' --exclude '__pycache__' \
-      --exclude '.pytest_cache' --exclude '.ruff_cache' --exclude '.venv' \
+      --exclude '.pytest_cache' --exclude '.ruff_cache' \
       "$SRC/" /tmp/agb-hr-check/
 cp skills/agent-bench/cases/L-hookrelay/probes/test_probe.py /tmp/agb-hr-check/tests/
-cd /tmp/agb-hr-check && uv sync && uv run pytest tests/test_probe.py -q; cd -
+cd /tmp/agb-hr-check && ./.venv/bin/python -m pytest tests/test_probe.py -q; cd -
 ```
 Expected: 15 passed — `hookrelay-r4-gpt-sol` scored 15/15 on this probe in round 4.
+
+Then, per `references/adding-a-case.md`, break exactly one requirement in the throwaway copy, re-run the same command, and confirm the corresponding probe test is the **only** failure. Both transcripts go in `probes/VALIDATION.md`.
 
 Do not commit or modify anything in the source repository.
 
