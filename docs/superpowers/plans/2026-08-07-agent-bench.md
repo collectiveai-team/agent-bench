@@ -1006,21 +1006,29 @@ This section is required. Task 12's rule that a reference implementation is neve
 
 - [ ] **Step 7: Validate the probes against a known-good implementation**
 
-The frozen base built in Task 14 is a Taskflow implementation that already scored 14/14 on this probe. Use it as the validation target:
+`taskflow-r4-gpt-sol` is a Taskflow implementation that already scored 14/14 on this probe. Use it as the validation target.
+
+**Its work was never committed.** Branch `bench-r4` there still points at the scaffold commit and the whole implementation is untracked in the working tree — so `git worktree add` or `git archive` would yield an empty `app/`. Copy the working tree instead:
 
 ```bash
-git -C /Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol worktree add /tmp/agb-probe-check bench-r4
+SRC=/Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol
+rm -rf /tmp/agb-probe-check
+rsync -a --exclude '.git' --exclude '.orquestalite' --exclude '__pycache__' \
+      --exclude '.pytest_cache' --exclude '.ruff_cache' --exclude '.venv' \
+      "$SRC/" /tmp/agb-probe-check/
 cp skills/agent-bench/cases/L-taskflow/probes/test_probe.py /tmp/agb-probe-check/tests/
-cd /tmp/agb-probe-check && uv run pytest tests/test_probe.py -q; cd -
+cd /tmp/agb-probe-check && uv sync && uv run pytest tests/test_probe.py -q; cd -
 ```
 Expected: 14 passed.
 
+Do not commit anything in the source repository, and do not modify it in any way. It is read-only evidence from a prior benchmark round.
+
 - [ ] **Step 8: Record validation and clean up**
 
-Write `probes/VALIDATION.md` with the command above, its output, the date, and the target commit SHA. Then:
+Write `probes/VALIDATION.md` with the command above, its actual output, the date, the source directory, and the scaffold commit SHA the working tree sits on (`git -C "$SRC" rev-parse --short HEAD`). Note explicitly that the target was an uncommitted working tree, so the SHA identifies the scaffold rather than the implementation. Then:
 
 ```bash
-git -C /Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol worktree remove /tmp/agb-probe-check
+rm -rf /tmp/agb-probe-check
 ```
 
 - [ ] **Step 9: Verify the case is complete and leaks nothing**
@@ -1105,16 +1113,24 @@ Same structure as Task 10, with Hookrelay-specific anchors and `## What this cas
 
 - [ ] **Step 6: Validate the probes**
 
+`hookrelay-r4-gpt-sol`'s work was never committed either — branch `bench-r4` points at the scaffold and the implementation is untracked. Copy the working tree, exactly as Task 10 does:
+
 ```bash
-git -C /Users/lionelchamorro/Projects/personal/hookrelay-r4-gpt-sol worktree add /tmp/agb-hr-check bench-r4
+SRC=/Users/lionelchamorro/Projects/personal/hookrelay-r4-gpt-sol
+rm -rf /tmp/agb-hr-check
+rsync -a --exclude '.git' --exclude '.orquestalite' --exclude '__pycache__' \
+      --exclude '.pytest_cache' --exclude '.ruff_cache' --exclude '.venv' \
+      "$SRC/" /tmp/agb-hr-check/
 cp skills/agent-bench/cases/L-hookrelay/probes/test_probe.py /tmp/agb-hr-check/tests/
-cd /tmp/agb-hr-check && uv run pytest tests/test_probe.py -q; cd -
+cd /tmp/agb-hr-check && uv sync && uv run pytest tests/test_probe.py -q; cd -
 ```
 Expected: 15 passed — `hookrelay-r4-gpt-sol` scored 15/15 on this probe in round 4.
 
+Do not commit or modify anything in the source repository.
+
 - [ ] **Step 7: Record validation and clean up**
 
-Write `probes/VALIDATION.md` with the command, output, date, and target SHA, then remove the worktree.
+Write `probes/VALIDATION.md` with the command, its actual output, the date, the source directory, and the scaffold SHA the working tree sits on — noting that the target was an uncommitted working tree. Then `rm -rf /tmp/agb-hr-check`.
 
 - [ ] **Step 8: Verify**
 
@@ -1326,13 +1342,19 @@ The base is `taskflow-r4-gpt-sol` at branch `bench-r4`. It was chosen over the c
 
 - [ ] **Step 1: Export the tree**
 
+**`git archive` will not work here.** The source repository's `bench-r4` branch still points at the scaffold commit; the delivered implementation was never committed and lives untracked in the working tree. Copy the tree instead:
+
 ```bash
-mkdir -p skills/agent-bench/cases/_base-taskflow
-git -C /Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol archive bench-r4 \
-  | (mkdir -p skills/agent-bench/cases/_base-taskflow/tree && tar -x -C skills/agent-bench/cases/_base-taskflow/tree)
+SRC=/Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol
+mkdir -p skills/agent-bench/cases/_base-taskflow/tree
+rsync -a --exclude '.git' --exclude '.orquestalite' --exclude '__pycache__' \
+      --exclude '.pytest_cache' --exclude '.ruff_cache' --exclude '.venv' \
+      "$SRC/" skills/agent-bench/cases/_base-taskflow/tree/
 ls skills/agent-bench/cases/_base-taskflow/tree
 ```
-Expected: `app`, `tests`, `pyproject.toml`, `uv.lock`, `README.md`, `CONVENTIONS.md`, `features.md`.
+Expected: `app`, `tests`, `pyproject.toml`, `uv.lock`, `README.md`, `CONVENTIONS.md`, `features.md`, plus the orq-lite run configuration that Step 2 strips.
+
+Never commit, stage, or otherwise modify the source repository. It is read-only evidence from a prior benchmark round, and its uncommitted working tree is the only copy of that round's artifact.
 
 - [ ] **Step 2: Strip run state and benchmark residue**
 
@@ -1364,7 +1386,14 @@ Expected: 14 passed.
 
 - [ ] **Step 5: Write `BASE.md`**
 
-Sections: `## Identity` (`_base-taskflow@1`), `## Provenance` (source repository path, branch `bench-r4`, the exact commit SHA — capture it with `git -C ... rev-parse bench-r4`), `## Known deviations` (the module-level `_event_bus`, stated as a documented deviation so that a hunter reporting it is neither credited as finding a seeded defect nor penalised as a false positive), `## Verification` (the two command blocks above with their expected outputs), `## What was stripped` (the list from Step 2 and why), `## Staleness` (regenerating this base bumps it to `@2` and invalidates comparability of `B-sabotage` and `R-envelope` runs across the boundary).
+Sections: `## Identity` (`_base-taskflow@1`), `## Provenance` — and here the provenance cannot be a commit SHA, because the source implementation was never committed. Record instead: the source directory, the scaffold commit its working tree sat on (`git -C "$SRC" rev-parse --short HEAD`), the date of the copy, and a content hash of the exported tree so the base is pinned and auditable:
+
+```bash
+cd skills/agent-bench/cases/_base-taskflow/tree && \
+  find . -type f -not -path './.venv/*' | sort | xargs shasum -a 256 | shasum -a 256; cd -
+```
+
+State plainly that the round-4 artifact lived in an uncommitted working tree and that this copy is what pins it. Then `## Known deviations` (the module-level `_event_bus`, stated as a documented deviation so that a hunter reporting it is neither credited as finding a seeded defect nor penalised as a false positive), `## Verification` (the two command blocks above with their expected outputs), `## What was stripped` (the list from Step 2 and why), `## Staleness` (regenerating this base bumps it to `@2` and invalidates comparability of `B-sabotage` and `R-envelope` runs across the boundary).
 
 One more section, `## Answer-key exposure`, stating verbatim:
 
