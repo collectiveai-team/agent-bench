@@ -4,11 +4,11 @@
 
 ## Headless launch
 
-Supply `--output-format stream-json` so the output is machine-readable. Pass the prompt non-interactively (check `claude --help` for the current flag; confirm the flag resolves before launch rather than discovering mid-run that output is interactive). Redirect all output to a log path recorded in `telemetry.source_logs`.
+Supply `--output-format stream-json` so the output is machine-readable. Pass the prompt via `-p/--print` (`claude --help` documents this flag as the non-interactive mode; verify it still exists before launching — versions drift). Redirect all output to a log path recorded in `telemetry.source_logs`.
 
 ```sh
 nohup caffeinate -i claude --output-format stream-json \
-  <prompt-flag> "$(cat prompt.md)" \
+  -p "$(cat prompt.md)" \
   > /tmp/<run>-launch.log 2>&1 < /dev/null &
 disown
 ```

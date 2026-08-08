@@ -4,10 +4,10 @@
 
 ## Headless launch
 
-Invoke opencode non-interactively with the prompt supplied as an argument or flag (check `opencode --help` for the current headless flag; confirm it resolves before launch). Redirect all output to a log path recorded in `telemetry.source_logs`.
+Use `opencode run` with `--format json` to get machine-readable output. Without `--format json` the stream is formatted for human display and the JSON paths in `references/telemetry.md` will not match. The message is positional. Verify `opencode run --help` before launching — versions drift. Redirect all output to a log path recorded in `telemetry.source_logs`.
 
 ```sh
-nohup caffeinate -i opencode <headless-flag> "$(cat prompt.md)" \
+nohup caffeinate -i opencode run --format json "$(cat prompt.md)" \
   > /tmp/<run>-launch.log 2>&1 < /dev/null &
 disown
 ```
@@ -43,6 +43,8 @@ Record in `manifest.solver`:
 | `binaries[].version` | Output of `opencode --version` |
 | `binaries[].sha256` | sha256 of the binary |
 | `model_assignments` | The provider/model id string as it appears in `opencode models` output |
+| `config_files` | Provider credential files or opencode config files in effect, with sha256 and `differs_between_arms` |
+| `mcp_servers` | Any MCP servers active during the run |
 
 ## Known traps
 

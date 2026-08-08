@@ -53,6 +53,10 @@ Never rebuild mid-round. A rebuild changes the binary under test; runs before an
 
 Record the policy file path in `manifest.solver.config_files` with `differs_between_arms` set to reflect whether arms vary on the policy. Record the exact launch command verbatim in `manifest.solver.launch_command`.
 
+`manifest.solver.model_assignments` records the per-role model id for orq-lite runs. This must match `meta.json.model` in every invocation directory for the corresponding role; a mismatch means the runtime fell back to a default and the arm is not the intended configuration.
+
+`manifest.solver.mcp_servers` lists any MCP servers injected into invocations. If arms vary on MCP server availability, set `differs_between_arms` on the relevant `config_files` entry and document the intended difference in the manifest.
+
 ## Known traps
 
 - `flow run` does not accept `--log-format`; passing it causes the command to exit immediately with an unrecognised flag error.
