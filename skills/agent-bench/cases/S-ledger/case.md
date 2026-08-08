@@ -8,7 +8,7 @@
 | Version | 1 |
 | Expected duration | 15–45 min |
 | Expected cost | $1–4 |
-| Acceptance item count | 24 |
+| Acceptance item count | 27 |
 
 ## What it measures
 
@@ -42,4 +42,4 @@ These gates are identical for all cases and enforced by Stage 2 of the evaluator
 New case, authored from scratch 2026-08-08. Not ported from any prior benchmark round. The spec is derived from a common fintech exercise (ledger + idempotency keys) that recurs across agent benchmarks; the specific contract and probe set are original. Author: Lionel Chamorro (lio@collectiveai.io).
 
 Version history:
-- v1 (2026-08-08): initial authoring. Probe validation: 10/10 pass on correct reference; 2/10 fail (tests 3 and 4) when idempotency key check is removed.
+- v1 (2026-08-08): initial authoring. Probe validation: 12/12 pass on correct reference; 2/12 fail (test_idempotent_replay_same_body_returns_same_id_and_moves_once and test_idempotent_replay_different_body_conflicts) when idempotency key check is removed.

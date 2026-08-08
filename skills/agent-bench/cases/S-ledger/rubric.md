@@ -2,7 +2,13 @@
 
 Dimension names are fixed by `references/evaluator-4-judge.md`. Anchors are written for this case from scratch. Weights are adjusted from the L-family defaults; see the note below.
 
-**Reweighting rationale:** The default L-family weights allocate 10% to "Concurrency and async correctness." S-ledger has no background worker, no websocket, and no streaming endpoint — the only async surface is the standard FastAPI event loop. Concurrency here reduces to "no blocking I/O in handlers," which is table-stakes for FastAPI and not a meaningful discriminator between arms. The 10% has been redistributed: +5% to Spec fidelity (the idempotency and money-arithmetic contract is unusually precise and is the primary discriminator for this case) and +5% to Correctness and robustness (the atomicity and error-body requirements are the second discriminator). Concurrency and async correctness is retained as a dimension at a reduced weight (3%) so the judge still flags egregious violations (e.g. synchronous SQLite calls blocking the event loop) without overstating their significance in a short service that has no concurrent workloads in the probe suite.
+**Reweighting rationale:** Two dimensions are reduced from the L-family defaults.
+
+*Concurrency and async correctness* drops from 10% to 3% (freeing 7%). S-ledger has no background worker, no websocket, and no streaming endpoint — the only async surface is the standard FastAPI event loop. Concurrency here reduces to "no blocking I/O in handlers," which is table-stakes for FastAPI and not a meaningful discriminator between arms. The dimension is retained at 3% so the judge still flags egregious violations (e.g. synchronous SQLAlchemy calls blocking the event loop).
+
+*Code quality and idiom* drops from 10% to 7% (freeing 3%). For a service of this scope (~200 LOC of application code), coding-style differences between arms are smaller in absolute terms than for longer cases and are a weaker discriminator relative to correctness.
+
+The freed 10% is redistributed: +5% to Spec fidelity (the idempotency and money-arithmetic contract is unusually precise and is the primary discriminator for this case) and +5% to Correctness and robustness (the atomicity and error-body requirements are the second discriminator). Net: 30 + 25 + 15 + 15 + 3 + 7 + 5 = 100%.
 
 Score each dimension 1–5 (absolute protocol). Every score must cite at least one `file:line` reference or command output; a score without evidence is discarded. Do not reward code volume, comment density, or defensive boilerplate.
 

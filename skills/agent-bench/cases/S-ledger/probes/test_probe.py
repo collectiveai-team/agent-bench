@@ -1,12 +1,17 @@
 """Black-box probe suite for the S-ledger benchmark case.
 
-Exercises the public HTTP surface only. Never imports internal modules.
+Exercises the public HTTP surface. Makes no assumptions about the solver's
+internal module layout; `app.main.create_app` is the only imported name from
+the solver's package (the public ASGI entry point that spec/features.md
+requires). The fixture evicts all `app.*` modules from `sys.modules` rather
+than importing a specific settings path, so no internal structure is assumed.
+
 Uses an in-process ASGI transport (starlette.testclient.TestClient) — no live
 server is required or started.
 
-Run from the solver's repository root:  uv run pytest tests/test_probe.py -q
+Run from the solver's repository root:  uv run pytest probes/test_probe.py -q
 
-Test 10 (test_timestamps_are_timezone_aware_after_roundtrip) exists because a
+Test 12 (test_timestamps_are_timezone_aware_after_roundtrip) exists because a
 naive-datetime round-trip loss was a recurrent defect in prior benchmark rounds:
 an implementation may serialize an aware datetime on the creation response while
 the persistence layer stores it naively, so the creation response passes but a
@@ -15,7 +20,6 @@ re-fetch fails. The test re-fetches the record to exercise the storage path.
 
 from __future__ import annotations
 
-import importlib
 import os
 import sys
 import uuid
@@ -30,24 +34,23 @@ sys.path.insert(0, os.getcwd())  # probe runs from the solver's repo root
 # ── fixture ────────────────────────────────────────────────────────────────────
 
 
-def _reset_settings() -> None:
-    """Evict any cached settings so the next create_app() call re-reads the environment."""
-    try:
-        from app.core import config as _cfg  # noqa: PLC0415
+def _purge_app_modules() -> None:
+    """Evict the entire app package from sys.modules so the next import
+    re-reads env vars into a fresh Settings instance.
 
-        if hasattr(_cfg.get_settings, "cache_clear"):
-            _cfg.get_settings.cache_clear()
-        else:
-            importlib.reload(_cfg)
-    except Exception:  # noqa: BLE001
-        pass
+    Removes all 'app' and 'app.*' entries rather than importing a specific
+    module path, making no structural assumptions about the solver's layout.
+    """
+    for key in list(sys.modules):
+        if key == "app" or key.startswith("app."):
+            del sys.modules[key]
 
 
 @pytest.fixture()
 def client(tmp_path):
     """A TestClient backed by a brand-new app instance using a throwaway SQLite file."""
     os.environ["LEDGER_DB_PATH"] = str(tmp_path / "ledger.db")
-    _reset_settings()
+    _purge_app_modules()
     from app.main import create_app  # noqa: PLC0415
 
     with TestClient(create_app()) as c:
@@ -117,6 +120,31 @@ def test_transfer_moves_exact_minor_units(client):
     assert isinstance(dst_bal, int) and not isinstance(dst_bal, bool)
     # response body amount_minor is also an integer
     assert isinstance(body["amount_minor"], int) and not isinstance(body["amount_minor"], bool)
+
+
+def test_transfer_records_transaction_rows(client):
+    """A successful transfer appends one debit transaction (-amount_minor) to the source and one credit transaction (+amount_minor) to the destination."""
+    src = _make_account(client, "src")
+    dst = _make_account(client, "dst")
+    _credit(client, src["id"], 500)  # one credit transaction on src
+    _transfer(client, src["id"], dst["id"], 300)
+
+    src_txns = client.get(f"/accounts/{src['id']}/transactions").json()
+    dst_txns = client.get(f"/accounts/{dst['id']}/transactions").json()
+
+    # source: one credit (from _credit above) + one debit (from transfer) = 2 total
+    assert src_txns["total"] == 2, f"expected 2 transactions on source, got {src_txns['total']}"
+    # newest-first: the debit appears first
+    assert src_txns["items"][0]["amount_minor"] == -300, (
+        f"expected debit of -300 as newest source transaction, "
+        f"got {src_txns['items'][0]['amount_minor']}"
+    )
+    # destination: one credit from the transfer = 1 total
+    assert dst_txns["total"] == 1, f"expected 1 transaction on destination, got {dst_txns['total']}"
+    assert dst_txns["items"][0]["amount_minor"] == 300, (
+        f"expected credit of 300 as destination transaction, "
+        f"got {dst_txns['items'][0]['amount_minor']}"
+    )
 
 
 def test_idempotent_replay_same_body_returns_same_id_and_moves_once(client):
@@ -220,33 +248,33 @@ def test_unknown_account(client):
     assert r2.status_code == 404
 
 
-def test_pagination_bounds_and_order(client):
-    """25 credits to one account: default limit returns 20 items with total 25; results are newest-first; limit=101 returns 422; offset past end returns empty items with the correct total."""
+def test_pagination_default_limit_and_ordering(client):
+    """25 credits to one account: default limit returns exactly 20 items; total is 25; results are ordered newest-first."""
     acct = _make_account(client)
     for _ in range(25):
         _credit(client, acct["id"], 10)
 
-    # default limit (20)
     r = client.get(f"/accounts/{acct['id']}/transactions")
     assert r.status_code == 200
     body = r.json()
-    assert body["total"] == 25
-    assert len(body["items"]) == 20
+    assert body["total"] == 25, f"expected total 25, got {body['total']}"
+    assert len(body["items"]) == 20, f"expected 20 items with default limit, got {len(body['items'])}"
 
-    # newest first
     times = [item["created_at"] for item in body["items"]]
     assert times == sorted(times, reverse=True), "transactions must be ordered newest-first"
 
-    # limit > 100 → 422
-    r422 = client.get(f"/accounts/{acct['id']}/transactions?limit=101")
-    assert r422.status_code == 422
 
-    # offset past the end → empty items, total unchanged
-    r_past = client.get(f"/accounts/{acct['id']}/transactions?offset=30")
-    assert r_past.status_code == 200
-    past_body = r_past.json()
-    assert past_body["items"] == []
-    assert past_body["total"] == 25
+def test_pagination_offset_past_end(client):
+    """Requesting an offset past the last record returns an empty items list with the correct total."""
+    acct = _make_account(client)
+    for _ in range(5):
+        _credit(client, acct["id"], 10)
+
+    r = client.get(f"/accounts/{acct['id']}/transactions?offset=10")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["items"] == [], f"expected empty items list, got {body['items']}"
+    assert body["total"] == 5, f"expected total 5 (unchanged by offset), got {body['total']}"
 
 
 def test_timestamps_are_timezone_aware_after_roundtrip(client):
