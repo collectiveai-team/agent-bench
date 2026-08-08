@@ -11,7 +11,8 @@
 ## Global Constraints
 
 - **Everything in the repository is written in English.** Prose, filenames, commit messages, JSON keys.
-- **No executable harness is created.** No Python package, no CLI entry point, no CI workflow, no `pyproject.toml` at the repo root. Scripts appear only as copy-pasteable commands inside reference documents. Case scaffolds have their own `pyproject.toml`; that is case data, not repo tooling.
+- **No executable harness is created.** No Python package, no CLI entry point, no CI workflow, no `pyproject.toml` at the repo root. Scripts appear only as copy-pasteable commands inside reference documents.
+  **Carve-out — case data is not harness.** A case legitimately ships `.py` files: `probes/test_probe.py`, `defects/*/detect.py`, and a scaffold's own `pyproject.toml`. These are the case's frozen evaluation material, versioned with the case and executed only against a solver's output. They are never imported by the skill, never shared between cases except where a task says so explicitly, and never grow into a runner. Reviewers must not flag them as harness.
 - **Repository:** `git@github.com:collectiveai-team/agent-bench.git`, branch `main`, already initialized locally at `/Users/lionelchamorro/Projects/collectiveai/agent-bench` with two commits and `origin` configured.
 - **Skill install path must stay `skills/agent-bench/SKILL.md`** — this is what the `vercel-labs/skills` CLI resolves. Anything the skill needs at runtime lives under `skills/agent-bench/`.
 - **Case gate commands, verbatim, in every case:** `uv run ruff check .` and `uv run pytest -q`.
@@ -1433,7 +1434,7 @@ D7 is the pattern already validated in `orquesta-lite/benchmark/context-metrics/
 Run this loop once per defect, substituting `D1` through `D7` for `$d`:
 
 ```bash
-R=/Users/lionelchamorro/Projects/collectiveai/agent-bench
+R=$(git rev-parse --show-toplevel)
 d=D1   # repeat for D2 D3 D4 D5 D6 D7
 rm -rf /tmp/agb-def-check
 cp -R "$R/skills/agent-bench/cases/_base-taskflow/tree" /tmp/agb-def-check
@@ -1452,7 +1453,7 @@ Expected per defect: `git apply` silent; ruff exit 0; the project suite passes; 
 - [ ] **Step 4: Verify each detector passes on the clean base**
 
 ```bash
-R=/Users/lionelchamorro/Projects/collectiveai/agent-bench
+R=$(git rev-parse --show-toplevel)
 rm -rf /tmp/agb-clean-check
 cp -R "$R/skills/agent-bench/cases/_base-taskflow/tree" /tmp/agb-clean-check
 cd /tmp/agb-clean-check && uv sync
