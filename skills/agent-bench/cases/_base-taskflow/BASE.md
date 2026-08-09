@@ -11,7 +11,7 @@
 | Source directory | `/Users/lionelchamorro/Projects/personal/taskflow-r4-gpt-sol` |
 | Scaffold commit (branch `bench-r4`) | `9edeaa6` |
 | Copy date | 2026-08-08 |
-| Tree content hash | `b1108581aeda4eccbf6960d757b99be0248c8ee6c390e6bae78d47013e9b29f4` |
+| Tree content hash | `59619dc1550516f4c45a41fc9adc78b9f618dfbc66b7465b5daa76901b5b2d95` |
 
 The round-4 benchmark artifact lived in an **uncommitted working tree**. Branch `bench-r4` in the source repository points at scaffold commit `9edeaa6`; all of `app/` was delivered as untracked files and was never staged or committed. This copy — the tree stored here under `tree/` — is what pins that artifact. The content hash above is the authoritative fingerprint.
 
@@ -33,6 +33,8 @@ These are deviations from the `L-taskflow` specification that exist in the base 
 ## Verification
 
 ### Suite gate (run against the stripped tree with its own `.venv`)
+
+The declared gate commands are `uv run ruff check .` and `uv run pytest -q`. Verification was run using a `.venv` copied from the source repository (invoked as `./.venv/bin/python -m ...`) rather than `uv sync`, to avoid re-downloading Prefect; the gate commands and their expected outputs are unchanged.
 
 ```bash
 cd /tmp/agb-base-check
@@ -86,12 +88,15 @@ The following were removed from the raw export before the tree was committed. Th
 | `skills-lock.json` | Orquesta-lite lock file |
 | `features.md` | Original build specification — would hand a bug hunter the acceptance criteria |
 | `CONVENTIONS.md` | Original coding conventions — same exposure risk |
+| `tasks/todo.md` (and `tasks/`) | Solver working notes from the benchmark round. The file contains an intermediate count ("42 tests pass") that contradicts the real suite (44 passed). A hunter reading this file and then running the suite would be handed a numerical discrepancy by the base itself, manufacturing a false-positive signal that corrupts `B-sabotage`'s zero-defect control-arm measurement. The file is also session residue by the same principle as `.claude/` and `.superpowers/`: it is the prior solver's completion checklist with reviewed areas marked, which implicitly primes the hunt and marks un-named areas as less covered. |
 
 The `.venv` is excluded from the committed tree. Verification was run against a throwaway `/tmp/agb-base-check` copy that included a `.venv` copied from the source repository; the committed `tree/` directory contains no virtualenv.
 
 ## Staleness
 
-If the base is regenerated from a different source or with different stripping, bump the version to `_base-taskflow@2`. A version bump invalidates cross-run comparability between `B-sabotage` and `R-envelope` runs from before and after the boundary. Tasks 15 and 16 must both cite the same base version; if they diverge, their scores are not comparable.
+`@1`'s tree hash was recomputed on 2026-08-08 when `tasks/todo.md` was stripped before first use (no run of Tasks 15 or 16 had yet consumed the base). Because no run existed, comparability was not broken and the version was not bumped. This is a one-time exception; it does not establish precedent.
+
+Once any `B-sabotage` or `R-envelope` run cites `_base-taskflow@1`, any further change to the tree **must** bump the version to `_base-taskflow@2`. A version bump invalidates cross-run comparability between runs before and after the boundary. Tasks 15 and 16 must both cite the same base version; if they diverge, their scores are not comparable.
 
 ## Answer-key exposure
 
