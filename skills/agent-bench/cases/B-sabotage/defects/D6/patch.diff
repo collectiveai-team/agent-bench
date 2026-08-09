@@ -1,0 +1,16 @@
+diff --git a/app/services/jobs.py b/app/services/jobs.py
+index a7cbd08..e262ebc 100644
+--- a/app/services/jobs.py
++++ b/app/services/jobs.py
+@@ -52,10 +52,10 @@ class JobService:
+ 
+     async def create(self, job_create: JobCreate) -> Job:
+         job = await self._repository.create(job_create.type, job_create.payload)
+-        await self._session.commit()
+         self._event_bus.publish(
+             create_job_event(JOB_CREATED_EVENT, job.id, job.status)
+         )
++        await self._session.commit()
+         self._dispatcher.enqueue(job.id)
+         return job
+ 

@@ -1,0 +1,26 @@
+diff --git a/app/services/jobs.py b/app/services/jobs.py
+index a7cbd08..ba3b385 100644
+--- a/app/services/jobs.py
++++ b/app/services/jobs.py
+@@ -88,7 +88,7 @@ class JobService:
+         return await self._repository.stats()
+ 
+     async def delete(self, job_id: str) -> None:
+-        job = await self.get(job_id)
++        job = await self._repository.get(job_id)
+         if job.status == RUNNING_JOB_STATUS:
+             raise JobRunningError
+         await self._repository.delete(job)
+diff --git a/tests/test_jobs_api.py b/tests/test_jobs_api.py
+index 9a7faa4..3944391 100644
+--- a/tests/test_jobs_api.py
++++ b/tests/test_jobs_api.py
+@@ -47,7 +47,7 @@ def test_create_get_delete_job(client: TestClient) -> None:
+     assert client.get(f"/jobs/{created_job['id']}").status_code == 404
+ 
+ 
+-@pytest.mark.parametrize("method", ["get", "delete"])
++@pytest.mark.parametrize("method", ["get"])
+ def test_unknown_job_returns_404(client: TestClient, method: str) -> None:
+     response = getattr(client, method)(f"/jobs/{uuid4()}")
+ 

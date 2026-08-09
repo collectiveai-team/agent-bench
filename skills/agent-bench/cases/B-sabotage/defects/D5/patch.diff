@@ -1,0 +1,14 @@
+diff --git a/app/repositories/jobs.py b/app/repositories/jobs.py
+index b1bae43..42d8879 100644
+--- a/app/repositories/jobs.py
++++ b/app/repositories/jobs.py
+@@ -54,6 +54,9 @@ class JobRepository:
+     async def list(
+         self, job_status: str | None, limit: int, offset: int
+     ) -> list[Job]:
++        total = await self._session.scalar(select(func.count(Job.id)))
++        if total and offset >= total:
++            offset = max(0, total - limit)
+         statement = select(Job)
+         if job_status is not None:
+             statement = statement.where(Job.status == job_status)

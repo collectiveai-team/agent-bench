@@ -1,0 +1,71 @@
+diff --git a/app/repositories/jobs.py b/app/repositories/jobs.py
+index b1bae43..8dc27b7 100644
+--- a/app/repositories/jobs.py
++++ b/app/repositories/jobs.py
+@@ -52,19 +52,23 @@ class JobRepository:
+         return job
+ 
+     async def list(
+-        self, job_status: str | None, limit: int, offset: int
++        self, job_status: str | None, job_type: str | None, limit: int, offset: int
+     ) -> list[Job]:
+         statement = select(Job)
+         if job_status is not None:
+             statement = statement.where(Job.status == job_status)
++        if job_type is not None:
++            statement = statement.where(Job.status == job_type)
+         statement = statement.order_by(Job.created_at.desc(), Job.id.asc())
+         statement = statement.limit(limit).offset(offset)
+         return list(await self._session.scalars(statement))
+ 
+-    async def count(self, job_status: str | None) -> int:
++    async def count(self, job_status: str | None, job_type: str | None = None) -> int:
+         statement = select(func.count(Job.id))
+         if job_status is not None:
+             statement = statement.where(Job.status == job_status)
++        if job_type is not None:
++            statement = statement.where(Job.status == job_type)
+         total = await self._session.scalar(statement)
+         return total or 0
+ 
+diff --git a/app/routes/jobs.py b/app/routes/jobs.py
+index 26b8680..779edfa 100644
+--- a/app/routes/jobs.py
++++ b/app/routes/jobs.py
+@@ -37,11 +37,12 @@ async def create_job(job_create: JobCreate, service: JobServiceDependency):
+ async def list_jobs(
+     service: JobServiceDependency,
+     job_status: Annotated[str | None, Query(alias="status")] = None,
++    job_type: Annotated[str | None, Query(alias="type")] = None,
+     limit: int = DEFAULT_JOB_LIMIT,
+     offset: int = DEFAULT_JOB_OFFSET,
+ ):
+     try:
+-        jobs, total = await service.list(job_status, limit, offset)
++        jobs, total = await service.list(job_status, job_type, limit, offset)
+     except InvalidJobListQueryError as error:
+         raise HTTPException(status_code=422, detail=str(error)) from error
+     return {"jobs": jobs, "total": total}
+diff --git a/app/services/jobs.py b/app/services/jobs.py
+index a7cbd08..7a1932f 100644
+--- a/app/services/jobs.py
++++ b/app/services/jobs.py
+@@ -68,6 +68,7 @@ class JobService:
+     async def list(
+         self,
+         job_status: str | None = None,
++        job_type: str | None = None,
+         limit: int = DEFAULT_JOB_LIMIT,
+         offset: int = DEFAULT_JOB_OFFSET,
+     ) -> tuple[list[Job], int]:
+@@ -80,8 +81,8 @@ class JobService:
+         if offset < DEFAULT_JOB_OFFSET:
+             raise InvalidJobListQueryError("offset must be non-negative")
+ 
+-        jobs = await self._repository.list(job_status, limit, offset)
+-        total = await self._repository.count(job_status)
++        jobs = await self._repository.list(job_status, job_type, limit, offset)
++        total = await self._repository.count(job_status, job_type)
+         return jobs, total
+ 
+     async def stats(self) -> dict[str, object]:

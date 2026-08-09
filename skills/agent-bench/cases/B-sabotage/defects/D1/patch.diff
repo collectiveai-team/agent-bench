@@ -1,0 +1,24 @@
+diff --git a/app/db/models.py b/app/db/models.py
+index d656d10..c05f2b9 100644
+--- a/app/db/models.py
++++ b/app/db/models.py
+@@ -14,6 +14,10 @@ def utc_now() -> datetime:
+     return datetime.now(UTC)
+ 
+ 
++def utc_now_naive() -> datetime:
++    return datetime.now(UTC).replace(tzinfo=None)
++
++
+ class Base(DeclarativeBase):
+     pass
+ 
+@@ -61,7 +65,7 @@ class Job(Base):
+     result: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+     error: Mapped[str | None] = mapped_column(String, nullable=True)
+     created_at: Mapped[datetime] = mapped_column(
+-        UTCDateTime(), nullable=False, default=utc_now
++        DateTime(), nullable=False, default=utc_now_naive
+     )
+     started_at: Mapped[datetime | None] = mapped_column(
+         UTCDateTime(), nullable=True
