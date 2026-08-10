@@ -4,7 +4,8 @@ R-envelope probe suite.
 These probes are hidden from the solver. They verify that every error response in the
 taskflow service has been migrated to the RFC 7807 problem-details envelope
 (application/problem+json with type, title, status, detail, and instance),
-and that success responses are byte-identical to their pre-migration shape.
+that success responses are byte-identical to their pre-migration shape,
+and that HTTP-originated events on the event bus carry a request_id.
 
 All probes are black-box: they exercise the public HTTP surface only.
 No internal modules are imported.
@@ -45,6 +46,9 @@ def _assert_problem_json(response, expected_status: int) -> dict:
     )
     assert isinstance(body["instance"], str) and body["instance"], (
         "instance must be a non-empty string"
+    )
+    assert body["instance"].startswith("/"), (
+        f"instance must start with '/', got {body['instance']!r}"
     )
     return body
 
@@ -194,3 +198,37 @@ def test_create_job_success_shape_is_unchanged(client: TestClient) -> None:
     body = response.json()
     required = {"id", "type", "status", "payload", "result", "error", "created_at"}
     assert required.issubset(body.keys()), f"Success body missing fields: {required - body.keys()}"
+
+
+# ---------------------------------------------------------------------------
+# Propagation probe: job.created event must carry request_id
+#
+# Every event published to the bus from an HTTP request must include a
+# request_id field. The field is injected by create_job_event when it
+# receives a RequestContext (propagated explicitly through the service and
+# repository layers, never via contextvars or module-level globals).
+# ---------------------------------------------------------------------------
+
+
+def test_job_created_event_includes_request_id(client: TestClient) -> None:
+    """job.created event must carry a non-empty request_id string."""
+    bus = client.app.state.bus
+    queue = bus.subscribe()
+    try:
+        resp = client.post(
+            "/jobs", json={"type": "word_count", "payload": {"text": "probe"}}
+        )
+        assert resp.status_code == 201
+        # job.created is published synchronously inside service.create before
+        # control returns to the route handler, so get_nowait() is safe here.
+        event = queue.get_nowait()
+    finally:
+        bus.unsubscribe(queue)
+
+    assert "request_id" in event, (
+        "job.created event must include 'request_id'; "
+        f"keys present: {list(event.keys())}"
+    )
+    assert isinstance(event["request_id"], str) and event["request_id"], (
+        "request_id must be a non-empty string"
+    )

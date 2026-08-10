@@ -6,28 +6,39 @@
 |---|---|
 | Family | R |
 | Version | 1 |
-| Expected duration | 20–60 min |
-| Expected cost | $1–5 |
-| Acceptance item count | 10 |
-| Sealed sites | 6 |
+| Expected duration | 30–90 min |
+| Expected cost | $2–8 |
+| Acceptance item count | 11 |
+| Sealed sites | 6 envelope + 14 propagation |
 
 ## What it measures
 
-**Codebase navigation and sweep completeness on a realistic service.** The
-solver receives the `_base-taskflow@1` service — a FastAPI + SQLite + Prefect
-job-execution service with 44 passing tests — and must migrate every error
-response to the RFC 7807 Problem Details envelope (`application/problem+json`
-with `type`, `title`, `status`, `detail`, and `instance`) without changing
-any success response and without breaking the existing suite.
+**Codebase navigation, sweep completeness, and cross-layer refactor
+discipline on a realistic service.** The solver receives the
+`_base-taskflow@1` service — a FastAPI + SQLite + Prefect job-execution
+service with 44 passing tests — and must execute two interlocked halves:
+
+1. **Envelope half.** Migrate every error response to the RFC 7807 Problem
+   Details envelope (`application/problem+json` with `type`, `title`,
+   `status`, `detail`, and `instance`) without changing any success response
+   or breaking the existing suite.
+
+2. **Propagation half.** Add a `RequestContext` (containing a `request_id`
+   UUID) that is created once per HTTP request and propagated **explicitly as
+   a parameter** through the service and repository layers, appearing in every
+   event published to the event bus from an HTTP request. Use of `contextvars`
+   or module-level globals is explicitly forbidden.
 
 Scores distinguish solvers that:
 
 - locate every error-producing code path in an unfamiliar codebase (including
   both application-level `HTTPException` raises and framework-level
   `RequestValidationError` paths that require a custom handler override);
-- execute a complete sweep (site_coverage across six sealed sites);
+- execute a complete cross-layer sweep (propagation sealed files:
+  `app/services/jobs.py`, `app/repositories/jobs.py`, `app/events.py`);
 - make a correct, minimal change — adding exception handlers that cover all
   paths rather than editing each raise site individually;
+- thread context explicitly without reaching for ambient state;
 - update the subset of existing tests that assert the old error shape, without
   touching success-path tests.
 
@@ -52,9 +63,8 @@ schema design, or service architecture.
 from the base tree. No prior session state is required or relevant. `M-relay`
 is the correct case for memory or context-retention hypotheses.
 
-**Long-horizon planning** — the task scope is bounded (six sites, three files,
-~30–50 LOC of new handler code). Long-form planning or multi-day
-orchestration skills are not exercised.
+**Long-horizon planning** — the task scope is bounded by the two sealed site
+lists. Long-form planning or multi-day orchestration skills are not exercised.
 
 ## Gates
 
@@ -72,12 +82,18 @@ evaluator. No additional gates are permitted.
 
 New case, authored 2026-08-10. Based on `_base-taskflow@1` (frozen
 2026-08-08), which is a complete implementation of the `L-taskflow`
-specification. The migration task is derived from the RFC 7807 (Problem
-Details for HTTP APIs) standard and is a common refactoring pattern in
-real-world FastAPI services. Author: Lionel Chamorro.
+specification. The envelope half is derived from the RFC 7807 (Problem
+Details for HTTP APIs) standard. The propagation half is derived from
+the request-scoped context pattern common in FastAPI services. Author: Lionel
+Chamorro.
 
 Version history:
-- v1 (2026-08-10): initial authoring. Six sites sealed. Probe validation:
-  10/10 pass on full migration reference; 1/10 fail
+- v1 (2026-08-10): initial authoring. Six envelope sites sealed. Probe
+  validation: 10/10 pass on full migration reference; 1/10 fail
   (`test_unhandled_exception_500_is_problem_json`) when the `Exception`
   handler is removed. Base suite remains 44/44 throughout.
+- v2 (2026-08-10): added propagation half (14 sealed propagation sites across
+  3 files). Probe count rises to 11. Duration revised to 30–90 min / $2–8 to
+  reflect broader scope. site_coverage redefined to file-based propagation
+  coverage (3 sealed files). Scope_creep rule made deterministic. instance
+  constraint tightened to assert startswith("/").
