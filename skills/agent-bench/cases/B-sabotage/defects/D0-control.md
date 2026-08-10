@@ -4,7 +4,7 @@ The D0 arm is the unpatched `_base-taskflow@1` tree — no defect patches applie
 
 ## Purpose
 
-- Provides the denominator for the false-positive rate: FPR = (reproducible D0 findings) / (total findings the solver reports across all arms).
+- Provides the denominator for the false-positive rate: FPR_control = (findings on the D0 arm that reproduce against the clean base) / (total findings the solver reports on the D0 arm).
 - Any reproducible D0 finding is promoted to `_base-taskflow/BASE.md` as a known deviation, bumping the base version. It is not scored as a false positive for that solver run.
 - Non-reproducible D0 findings (the solver claims a defect but the detect.py equivalent passes on the clean tree) are false positives and reduce precision.
 

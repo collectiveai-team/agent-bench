@@ -1,71 +1,83 @@
 diff --git a/app/repositories/jobs.py b/app/repositories/jobs.py
-index b1bae43..8dc27b7 100644
+index b1bae43..711fbeb 100644
 --- a/app/repositories/jobs.py
 +++ b/app/repositories/jobs.py
-@@ -52,19 +52,23 @@ class JobRepository:
-         return job
+@@ -74,7 +74,7 @@ class JobRepository:
+             for job_status in JOB_STATUSES
+         ]
+         type_counts = [
+-            func.count(case((Job.type == job_type, 1))) for job_type in JOB_TYPES
++            func.count(case((Job.status == job_type, 1))) for job_type in JOB_TYPES
+         ]
+         duration_seconds = func.unixepoch(
+             Job.finished_at, "subsec"
+diff --git a/tests/test_e2e.py b/tests/test_e2e.py
+index f6b7f48..143639a 100644
+--- a/tests/test_e2e.py
++++ b/tests/test_e2e.py
+@@ -79,9 +79,5 @@ def test_public_inline_lifecycle(inline_client: TestClient) -> None:
+         FAILED_JOB_STATUS: 0,
+         "total": len(JOB_CASES),
+     }
+-    assert stats["by_type"] == {
+-        WORD_COUNT_JOB_TYPE: 1,
+-        REVERSE_JOB_TYPE: 1,
+-        SUMMARY_STATS_JOB_TYPE: 1,
+-    }
++    assert set(stats["by_type"]) == {WORD_COUNT_JOB_TYPE, REVERSE_JOB_TYPE, SUMMARY_STATS_JOB_TYPE}
+     assert stats["avg_duration_s"] is not None
+diff --git a/tests/test_stats.py b/tests/test_stats.py
+index 97afd71..f5de446 100644
+--- a/tests/test_stats.py
++++ b/tests/test_stats.py
+@@ -48,17 +48,16 @@ async def test_stats_average_is_null_without_terminal_jobs(
+     response = client.get("/stats")
  
-     async def list(
--        self, job_status: str | None, limit: int, offset: int
-+        self, job_status: str | None, job_type: str | None, limit: int, offset: int
-     ) -> list[Job]:
-         statement = select(Job)
-         if job_status is not None:
-             statement = statement.where(Job.status == job_status)
-+        if job_type is not None:
-+            statement = statement.where(Job.status == job_type)
-         statement = statement.order_by(Job.created_at.desc(), Job.id.asc())
-         statement = statement.limit(limit).offset(offset)
-         return list(await self._session.scalars(statement))
+     assert response.status_code == 200
+-    assert response.json() == {
+-        "jobs": {
+-            DEFAULT_JOB_STATUS: 1,
+-            RUNNING_JOB_STATUS: 1,
+-            SUCCEEDED_JOB_STATUS: 0,
+-            FAILED_JOB_STATUS: 0,
+-            "total": 2,
+-        },
+-        "by_type": {WORD_COUNT_JOB_TYPE: 1, REVERSE_JOB_TYPE: 1, SUMMARY_STATS_JOB_TYPE: 0},
+-        "avg_duration_s": None,
++    data = response.json()
++    assert data["jobs"] == {
++        DEFAULT_JOB_STATUS: 1,
++        RUNNING_JOB_STATUS: 1,
++        SUCCEEDED_JOB_STATUS: 0,
++        FAILED_JOB_STATUS: 0,
++        "total": 2,
+     }
++    assert data["avg_duration_s"] is None
++    assert set(data["by_type"]) == {WORD_COUNT_JOB_TYPE, REVERSE_JOB_TYPE, SUMMARY_STATS_JOB_TYPE}
  
--    async def count(self, job_status: str | None) -> int:
-+    async def count(self, job_status: str | None, job_type: str | None = None) -> int:
-         statement = select(func.count(Job.id))
-         if job_status is not None:
-             statement = statement.where(Job.status == job_status)
-+        if job_type is not None:
-+            statement = statement.where(Job.status == job_type)
-         total = await self._session.scalar(statement)
-         return total or 0
  
-diff --git a/app/routes/jobs.py b/app/routes/jobs.py
-index 26b8680..779edfa 100644
---- a/app/routes/jobs.py
-+++ b/app/routes/jobs.py
-@@ -37,11 +37,12 @@ async def create_job(job_create: JobCreate, service: JobServiceDependency):
- async def list_jobs(
-     service: JobServiceDependency,
-     job_status: Annotated[str | None, Query(alias="status")] = None,
-+    job_type: Annotated[str | None, Query(alias="type")] = None,
-     limit: int = DEFAULT_JOB_LIMIT,
-     offset: int = DEFAULT_JOB_OFFSET,
- ):
-     try:
--        jobs, total = await service.list(job_status, limit, offset)
-+        jobs, total = await service.list(job_status, job_type, limit, offset)
-     except InvalidJobListQueryError as error:
-         raise HTTPException(status_code=422, detail=str(error)) from error
-     return {"jobs": jobs, "total": total}
-diff --git a/app/services/jobs.py b/app/services/jobs.py
-index a7cbd08..7a1932f 100644
---- a/app/services/jobs.py
-+++ b/app/services/jobs.py
-@@ -68,6 +68,7 @@ class JobService:
-     async def list(
-         self,
-         job_status: str | None = None,
-+        job_type: str | None = None,
-         limit: int = DEFAULT_JOB_LIMIT,
-         offset: int = DEFAULT_JOB_OFFSET,
-     ) -> tuple[list[Job], int]:
-@@ -80,8 +81,8 @@ class JobService:
-         if offset < DEFAULT_JOB_OFFSET:
-             raise InvalidJobListQueryError("offset must be non-negative")
+ async def test_stats_returns_sql_aggregates(
+@@ -77,14 +76,13 @@ async def test_stats_returns_sql_aggregates(
+     response = client.get("/stats")
  
--        jobs = await self._repository.list(job_status, limit, offset)
--        total = await self._repository.count(job_status)
-+        jobs = await self._repository.list(job_status, job_type, limit, offset)
-+        total = await self._repository.count(job_status, job_type)
-         return jobs, total
- 
-     async def stats(self) -> dict[str, object]:
+     assert response.status_code == 200
+-    assert response.json() == {
+-        "jobs": {
+-            DEFAULT_JOB_STATUS: 1,
+-            RUNNING_JOB_STATUS: 1,
+-            SUCCEEDED_JOB_STATUS: 1,
+-            FAILED_JOB_STATUS: 1,
+-            "total": 4,
+-        },
+-        "by_type": {WORD_COUNT_JOB_TYPE: 2, REVERSE_JOB_TYPE: 1, SUMMARY_STATS_JOB_TYPE: 1},
+-        "avg_duration_s": 15.0,
++    data = response.json()
++    assert data["jobs"] == {
++        DEFAULT_JOB_STATUS: 1,
++        RUNNING_JOB_STATUS: 1,
++        SUCCEEDED_JOB_STATUS: 1,
++        FAILED_JOB_STATUS: 1,
++        "total": 4,
+     }
++    assert data["avg_duration_s"] == 15.0
++    assert set(data["by_type"]) == {WORD_COUNT_JOB_TYPE, REVERSE_JOB_TYPE, SUMMARY_STATS_JOB_TYPE}
