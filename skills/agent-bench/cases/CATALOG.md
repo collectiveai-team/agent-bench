@@ -1,6 +1,6 @@
 # Case catalog
 
-This file is the contract that Tasks 10-17 implement against. Cases listed here do not exist yet; each task creates one. Do not add a row for a case until its `case.md`, `spec/`, `scaffold/`, `acceptance.md`, `rubric.md`, and `probes/` are all committed.
+All seven cases are built and verified. Do not add a row for a new case until its `case.md`, `spec/`, `scaffold/`, `acceptance.md`, `rubric.md`, and `probes/` are all committed.
 
 ## Cases
 
@@ -10,8 +10,8 @@ This file is the contract that Tasks 10-17 implement against. Cases listed here 
 | `L-hookrelay` | Long greenfield | Ported from prior benchmark | 2–6 h | $15–60 | A second independent spec, so conclusions do not rest on one case | Codebase navigation; defect detection; cross-session continuity |
 | `S-ledger` | Short greenfield | New | 15–45 min | $1–4 | Idempotency keys, boundary math on balances, structured error bodies; cheap enough for N ≥ 5 | Codebase navigation; defect detection; cross-session continuity |
 | `S-ingest` | Short greenfield | New | 15–45 min | $1–4 | Schema-validating ingest CLI with bad-row quarantine; non-API shape, so "short" is not always the same kind of task | Codebase navigation; defect detection; cross-session continuity |
-| `B-sabotage` | Bug hunt | Frozen good `L-taskflow` implementation (`_base-taskflow`) plus defect patches | 10–30 min | $1–3 | Detection capability rather than authoring capability | Authoring; architecture; greenfield design |
-| `R-envelope` | Multi-file refactor | Same frozen base (`_base-taskflow`) | 30–90 min | $2–8 | Complete sweep over a sealed site list; where subagent strategies should separate from single-session ones | Greenfield design; defect detection; cross-session continuity |
+| `B-sabotage` | Bug hunt | Frozen good `L-taskflow` implementation (`_base-taskflow`) plus defect patches | 20–60 min | $1–5 | Detection capability rather than authoring capability | Authoring; architecture; greenfield design |
+| `R-envelope` | Multi-file refactor | Same frozen base (`_base-taskflow`) | 30–90 min | $2–8 | Complete sweep over two sealed site lists (6 envelope sites + 14 propagation sites); where subagent strategies should separate from single-session ones | Greenfield design; defect detection; cross-session continuity |
 | `M-relay` | Multi-session | `S-ledger` split into 3 legs with cold context between legs | 1–2 h | $4–12 | Cross-session continuity; the only design where a memory MCP can produce signal | Greenfield scale; codebase navigation |
 
 ## Shared bases
