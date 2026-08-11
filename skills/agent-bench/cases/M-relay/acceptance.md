@@ -84,7 +84,25 @@ in the `scoring.md` formula — those two terms are not fully independent for th
 
 ## Family-M scoring inputs
 
-The four scoring inputs that Stage 2 writes to `verdict.family_outcome` for M-relay runs:
+The four scoring inputs that Stage 2 writes to `verdict.family_outcome` for M-relay runs.
+The `correctness_normalized` formula from `references/scoring.md` is:
+
+```
+correctness_normalized =
+  0.4 × final_outcome
+  + 0.3 × rediscovery_efficiency
+  + 0.2 × continuity
+  + 0.1 × (1 − rework_ratio)
+```
+
+**Harness requirement:** the run harness must place a git tag at HEAD at the end of each
+leg. Tags required: `bench-base` (scaffold commit), `m-relay-leg1`, `m-relay-leg2`,
+`m-relay-leg3`. All four tags are needed for `rework_ratio` computation. See
+`references/run-protocol.md` for the tagging protocol.
+
+**Verifying SHA256SUMS:** run `shasum -a 256 -c SHA256SUMS` from inside the `probes/`
+directory, not from the repository root. The manifest records a bare filename
+(`test_probe.py`), so running from the repo root will fail with a "no such file" error.
 
 ### `verdict.family_outcome.final_outcome`
 
@@ -99,6 +117,24 @@ final_outcome =
 where `acceptance_share = passed_items / 27`, `gates_passed ∈ {0, 1}`,
 `probe_share = probes_passed / 12`.
 
+### `verdict.family_outcome.rediscovery_efficiency`
+
+The primary discriminating term for memory-mechanism comparisons.
+
+```
+rediscovery_efficiency = min(1, best_rediscovery_cost_usd / rediscovery_cost_usd)
+```
+
+`best_rediscovery_cost_usd` is the minimum across all arms in this comparison
+(same relative-to-best normalisation as `efficiency` in the composite formula).
+
+**`rediscovery_cost_usd` definition:** USD cost of tokens consumed before the first
+file write or code-edit tool call at the start of each continuation leg (legs 2 and 3),
+summed across both legs. The evaluator reads this from per-leg telemetry breakdowns.
+If per-leg breakdowns are unavailable, estimate from `telemetry.by_role` and document the
+method; if entirely unavailable, set `rediscovery_efficiency` to `null`, exclude it from
+`correctness_normalized`, and reduce the weight denominator to 0.7 with documentation.
+
 ### `verdict.family_outcome.continuity`
 
 Share of the seven `continuity.md` rows that pass at the end of the run:
@@ -111,23 +147,25 @@ The evaluator runs each verification command in `continuity.md` and counts passi
 
 ### `verdict.family_outcome.rework_ratio`
 
-Lines rewritten of already-delivered work, measured from git tags at each leg boundary.
-The run harness creates a tag at the end of each leg:
+Lines rewritten of already-delivered work, summed across both leg boundaries. Using both
+intervals ensures that code rewritten in leg 2 then restored in leg 3 — two genuine rework
+events — is not cancelled out by a leg1→leg3 diff.
 
-- `m-relay-leg1`: tag placed at the HEAD commit when the solver finishes leg 1
-- `m-relay-leg2`: tag placed at the HEAD commit when the solver finishes leg 2
-- `m-relay-leg3`: tag placed at the final HEAD (equivalent to the evaluation commit)
+**Leg-boundary tags** (created by the harness, see `references/run-protocol.md`):
+- `bench-base`: scaffold HEAD before any leg begins
+- `m-relay-leg1`: HEAD at end of leg 1
+- `m-relay-leg2`: HEAD at end of leg 2
+- `m-relay-leg3`: HEAD at end of leg 3 (evaluation commit)
 
-**Numerator** (`lines_reworked`): lines that existed at the end of leg 1 that were removed
-or replaced by the end of leg 3. This measures how much code written in leg 1 was later
-changed:
+**Numerator** (`lines_reworked`): negative-line diffs summed across both intervals:
 
 ```bash
-git diff m-relay-leg1 m-relay-leg3 | grep '^-' | grep -v '^---' | wc -l
+A=$(git diff m-relay-leg1 m-relay-leg2 | grep '^-' | grep -v '^---' | wc -l)
+B=$(git diff m-relay-leg2 m-relay-leg3 | grep '^-' | grep -v '^---' | wc -l)
+echo $((A + B))
 ```
 
-**Denominator** (`lines_delivered`): all new lines added from the scaffold baseline to the
-final leg-3 commit:
+**Denominator** (`lines_delivered`): all new lines from scaffold to final leg-3 commit:
 
 ```bash
 git diff bench-base m-relay-leg3 | grep '^+' | grep -v '^+++' | wc -l
@@ -141,20 +179,5 @@ rework_ratio = lines_reworked / lines_delivered
 
 Both values are integers (line counts). `rework_ratio` is a real number in `[0, ∞)` but is
 typically in `[0, 0.3]`; a value above 0.5 indicates the solver re-implemented significant
-portions of leg-1 code. The evaluator clips at 1.0 for the scoring formula
-(`0.2 × (1 − min(1, rework_ratio))`).
-
-### `verdict.family_outcome.rediscovery_cost_usd` (reported only, not scored)
-
-The cost the solver incurred to re-orient itself at the start of each continuation leg.
-This is already captured by `telemetry.totals.cost_usd` and the per-role breakdown in
-`telemetry.by_role`. Scoring it separately would double-count what is already in
-`efficiency`. Report it as an informational line in the round report:
-
-```
-rediscovery_cost_usd = sum of input-token cost in the first N turns of legs 2 and 3
-                       before the first tool write or code edit
-```
-
-The evaluator estimates this from the per-leg telemetry if the harness records per-leg
-breakdowns; otherwise it is left as `null` and noted as unavailable.
+portions of prior-leg code. The evaluator clips at 1.0 for the scoring formula
+(`0.1 × (1 − min(1, rework_ratio))`).

@@ -7,6 +7,10 @@ repository (server running on `http://localhost:8000`) after all three sessions 
 Each row is one leg-1 design decision that legs 2 and 3 must honour. The `continuity` score
 is `rows_passed / total_rows` (seven rows).
 
+**Precondition:** these checks assume the gates (`uv run ruff check .` and `uv run pytest -q`)
+already passed. Stage 2 does not reach this stage if the gates failed; do not run continuity
+checks against a build that does not pass the gates.
+
 The live server is started by the evaluator with:
 ```sh
 uv run uvicorn app.main:app --host 0.0.0.0 --port 8000

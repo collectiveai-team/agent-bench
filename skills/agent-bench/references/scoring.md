@@ -121,9 +121,10 @@ Term definitions:
 
 ```
 correctness_normalized =
-  0.5 x final_outcome
-  + 0.3 x continuity
-  + 0.2 x (1 - rework_ratio)
+  0.4 x final_outcome
+  + 0.3 x rediscovery_efficiency
+  + 0.2 x continuity
+  + 0.1 x (1 - rework_ratio)
 ```
 
 Term definitions:
@@ -131,14 +132,13 @@ Term definitions:
 | Term | Definition | Source |
 |---|---|---|
 | `final_outcome` | L / S formula applied to the last leg | Computed from `verdict.json` of the final leg |
+| `rediscovery_efficiency` | `min(1, best_rediscovery_cost_usd / rediscovery_cost_usd)` — the arm with the lowest rediscovery cost scores 1.0; others score proportionally less | `verdict.family_outcome.rediscovery_efficiency`; `best_rediscovery_cost_usd` is the minimum across all arms in this comparison (same relative-to-best normalisation as `efficiency`) |
 | `continuity` | share of the sealed leg-1 decision checklist still honoured at the end of the run | `verdict.family_outcome.continuity`; checklist is sealed and hashed at the end of leg 1 |
 | `rework_ratio` | lines rewritten of already-delivered work / total lines delivered | `verdict.family_outcome.rework_ratio`; rewritten means lines present in a prior leg's diff that are removed or replaced in a later leg |
 
----
+**Reweighting rationale (v1 → v2):** the original formula weighted `final_outcome` at 0.5 and omitted rediscovery. Review of `M-relay` showed that a no-memory arm can recover all four leg-1 design decisions by reading the repository (≈100 lines), so `continuity` and `rework_ratio` do not reliably discriminate. The only quantity that genuinely differs between arms is what it costs to rediscover. `rediscovery_efficiency` is therefore the primary discriminating term, weighted at 0.3 — enough that a 2× difference in recall cost produces a 0.15 difference in `correctness_normalized`, which resolves through `Q` as roughly 0.07 in `Composite`. `final_outcome` remains the largest term (0.4) because a solver that converges on the correct contract still scores higher than one that does not. `continuity` drops to 0.2 and `rework_ratio` to 0.1 because both are recoverable signals that will be nearly identical across arms when rediscovery is available.
 
-## Not scored, only reported
-
-**Family M rediscovery cost** — the cost the agent incurred to re-orient itself at the start of each continuation leg. This is already captured by `telemetry.totals.cost_usd` and the per-role breakdown in `telemetry.by_role`. Scoring it separately would double-count what is already in `efficiency`. Report it as an informational line in the round report; do not include it in `correctness_normalized` or `efficiency`.
+**`rediscovery_cost_usd` definition:** tokens consumed before the first file write or code-edit tool call at the start of each continuation leg (legs 2 and 3), converted to USD using the same rate as `telemetry.totals.cost_usd`. The evaluator sums this across both continuation legs. If the harness does not record per-leg telemetry, set `rediscovery_cost_usd` to the per-leg average derived from `telemetry.by_role` and document the estimation method. If per-leg breakdowns are entirely unavailable, set `rediscovery_efficiency` to `null` and exclude it from `correctness_normalized` (reduce the denominator accordingly and document the exclusion).
 
 ---
 

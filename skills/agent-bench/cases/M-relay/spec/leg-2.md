@@ -1,5 +1,13 @@
 # M-relay — Session 2 of 3: Transfers with idempotency
 
+> **Authoring note (v1):** This spec specifies `409 {"detail": "insufficient_funds"}` for
+> the new error condition. That unavoidably reveals the `detail` key name used for all error
+> bodies in the service, which slightly weakens continuity rows CC-03 and CC-06 on the
+> key-name dimension — a solver can infer by analogy that 404 also uses `detail`. This is an
+> accepted trade-off: the new behaviour must be specified explicitly, and the continuity
+> signal is retained on the string-value dimension ("account not found") and on the UUID4 /
+> timestamp decisions, which are not revealed here. Considered and accepted at v1 authoring.
+
 **This is the second of three sessions.** The repository already contains the account
 management and credit features from session 1. The conventions and design decisions you
 recorded at the end of session 1 govern this session — this spec does not restate them.
