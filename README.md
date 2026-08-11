@@ -8,7 +8,27 @@ A benchmark repository for comparing coding-agent configurations. One skill driv
 npx skills add collectiveai-team/agent-bench
 ```
 
-This copies `skills/agent-bench/` into `~/.agents/skills/` and symlinks it into each harness's skills directory.
+The CLI clones the repository and copies `skills/agent-bench/` — including the full `cases/` tree — into the skills directory for your harness. Where that goes depends on context:
+
+- **Run from inside a project directory:** installs to `.agents/skills/agent-bench/` in that project and creates a symlink at `.claude/skills/agent-bench`.
+- **Run from outside any project (global install):** installs to `~/.agents/skills/agent-bench/` and symlinks into `~/.claude/skills/agent-bench`.
+
+In both cases `SKILL.md`, `references/`, `templates/`, and `cases/` (all seven cases plus `_base-taskflow`) are present at the installed path.
+
+### Install caveats
+
+`npx skills add` was verified against `collectiveai-team/agent-bench` on 2026-08-10, run from inside a project directory. The complete `cases/` directory traveled with the install; no selective-copy behaviour was observed. All eight case directories (`_base-taskflow`, `B-sabotage`, `L-hookrelay`, `L-taskflow`, `M-relay`, `R-envelope`, `S-ingest`, `S-ledger`) were present at the installed path alongside `SKILL.md`, `references/` and `templates/`.
+
+Only the project-local install path was exercised. The global path is documented from the CLI's behaviour with other skills on the same machine, not from a run against this repository.
+
+If you need the skill accessible without running `npx skills add` — for example, in a CI environment — clone the repository and point `$AGENT_BENCH_HOME` at it:
+
+```sh
+git clone git@github.com:collectiveai-team/agent-bench.git ~/agent-bench
+export AGENT_BENCH_HOME=~/agent-bench
+```
+
+The run ledger resolves `$AGENT_BENCH_HOME` before falling back to local discovery (see `## Ledger location` below).
 
 ## Use
 

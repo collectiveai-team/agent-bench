@@ -5,3 +5,6 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 bench-runs/
+.agents/
+skills-lock.json
+.claude/
